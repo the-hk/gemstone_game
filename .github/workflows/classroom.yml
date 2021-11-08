@@ -1,0 +1,13 @@
+    name: GitHub Classroom Workflow
+
+    on: [push]
+
+    jobs:
+      build:
+        name: Autograding
+        runs-on: ubuntu-18.04
+        steps:
+          - uses: actions/checkout@v2
+          - name: "Building the code"
+            run: make 
+          - uses: education/autograding@v1
