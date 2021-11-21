@@ -1,15 +1,37 @@
 #include <stdio.h>
-
+#include <unistd.h>
 /////////////*******VARIABLES*************\\\\\\\\\\\\
+
 const int diamond = 3500;
 const int ruby = 50;
 const int sapphire = 1200;
-const int emarald = 800;
+const int emerald = 800;
 
 /////////////*******FUNCTIONS*************\\\\\\\\\\\\
 
-int go_and_read(int pid_of_child){
-   FILE *fp1 = fopen()
+int go_and_read(int number_of_child){
+   char filename[20];
+   char temp;
+   int result = 0;
+   sprintf(filename,"buckets/%d.txt",number_of_child);
+   FILE *fp1 = fopen(filename,"r");
+   while(fscanf(fp1,"%c",&temp)!= EOF){
+      
+      if(temp == 'd'){
+         printf("diamond \n");
+         result += diamond;
+      }else if(temp == 'r'){
+         printf("ruby \n");
+         result += ruby;
+      }else if(temp == 's'){
+         printf("sapphire \n");
+         result += sapphire;
+      }else if(temp == 'e'){
+         printf("emerald \n");
+         result += emerald;
+      }
+   }
+   return result;
 
 }
 
@@ -46,6 +68,7 @@ int create_process(){
 
 int main() {
    // printf() displays the string inside quotation
+   printf("total number = %d\n",go_and_read(0));
    int a=0;
    a++;
    printf("Result 1600\n");
