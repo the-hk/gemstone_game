@@ -6,12 +6,14 @@
 #include <string.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
-#define MAX 10
+#include <sys/types.h>
+
+#define MAX 1024
   
-// structure for message queue  4
+/*******STRUCTURES*************/
 struct mesg_buffer {
     long mesg_type;
-    char mesg_text[100];
+    char mesg_text[1024];
 } message;
 
 /*******VARIABLES*************/
@@ -20,20 +22,26 @@ const int ruby = 50;
 const int sapphire = 1200;
 const int emerald = 800;
 
-int hk = 0;
 int fd1[2];
-int fd2[2];
-int fd3[2];
-int fd4[2];
-int fd5[2];
+int local_counter = 0;
+int msgid;
 
 /*******FUNCTIONS*************/
-
-void *create_shared_memory(size_t size){
-
-  int protection = PROT_READ | PROT_WRITE;
-  int visibility = MAP_SHARED | MAP_ANONYMOUS;
-  return mmap(NULL, size, protection, visibility, -1, 0);
+void write_message(key_t key,char text[]){
+    int msgid;
+    msgid = msgget(key, 0666 | IPC_CREAT);
+    message.mesg_type = 1;
+    strcpy(message.mesg_text,text);
+    msgsnd(msgid, &message, sizeof(message), 0);
+    printf("my message :%s\n",message.mesg_text);
+}
+//-----------------------------------
+int read_message(key_t key){
+   int msgid;
+   msgid = msgget(key, 0666 | IPC_CREAT);
+   msgrcv(msgid, &message, sizeof(message), 1, 0);
+   printf("Data Received is : %s \n", message.mesg_text);
+   return msgid;
 }
 //--------------------------------------------------
 
@@ -46,10 +54,11 @@ void print_child_sleep(int main_id,int sleep_time){
    printf("[PID:%d] Tired. Going to sleep for %dmsec.\n",main_id,sleep_time);
 }
 
-
-void go_and_read(int number_of_child,void *shared_mem){
+//-----------------------------------------------------------
+void go_and_read(int number_of_child,key_t key){
    char filename[20];
    char temp;
+   int local_counter = 0;
    sprintf(filename,"buckets/%d.txt",number_of_child);
    FILE *fp1 = fopen(filename,"r");
    while(fscanf(fp1,"%c",&temp)!= EOF){
@@ -57,32 +66,46 @@ void go_and_read(int number_of_child,void *shared_mem){
       if(temp == 'd'){
          //printf("diamond \n");
          char message []="diamond";
-         memcpy(shared_mem, message, sizeof(message));
+         write_message(key,message);
+         local_counter ++;
       }else if(temp == 'r'){
          //printf("ruby \n");
          char message []="ruby";
-         memcpy(shared_mem, message, sizeof(message));
+         write_message(key,message);
+         local_counter ++;
+         printf("girdim\n");
       }else if(temp == 's'){
          //printf("sapphire \n");
          char message []= "sapphire";
-         memcpy(shared_mem, message, sizeof(message));
+         write_message(key,message);
+         local_counter ++;
       }else if(temp == 'e'){
          //printf("emerald \n");
          char message []="emerald";
-         memcpy(shared_mem, message, sizeof(message));
+         write_message(key,message);
+         local_counter ++;
       }  
    }
+   close(fd1[0]);
+   write(fd1[1],&local_counter,sizeof(int));
+   close(fd1[1]);
+   printf("girdim\n");
 }
 
-int creating_child_process(void *shared_mem){
+int creating_child_process(key_t key){
+
    int pid=fork();
+   wait(NULL);
+   close(fd1[1]);
+   read(fd1[0],&local_counter,sizeof(int));
+   close(fd1[0]);
+   printf("%d\n",local_counter);
+   for(int i=0;i<local_counter;i++){
+      msgid = read_message(key);          
+   }
+   msgctl(msgid, IPC_RMID, NULL);
 
    if(pid>0){
-      while(1){
-         printf("Child read: %s\n", shared_mem);
-         sleep(1);
-      }
-      
       int pid2=fork();
 
       if(pid2>0){
@@ -90,47 +113,45 @@ int creating_child_process(void *shared_mem){
 
          if(pid3>0){
             int pid4=fork();
-
+      
             if(pid4>0){
                int pid5=fork();
-
                if(pid5>0){
                
                }else if(pid5==0){
-
+                  go_and_read(4,key);
                }
             }else if(pid4==0){
-
+               go_and_read(3,key);
             }
 
          }else if(pid3==0){
-
+            go_and_read(2,key);
          }
 
       }else if(pid2==0){
-
+         go_and_read(1,key);
       }
 
    }else if(pid==0){
-      go_and_read(0,shared_mem);
+      go_and_read(0,key);
    }
    return 0;
 }
 
 int main() {
-   //pipe(fd1);
-   //pipe(fd2);
-   //pipe(fd3);
-   //pipe(fd4);
-   //pipe(fd5);
-//
-   //void *shared_mem = create_shared_memory(200);
-   //creating_child_process(shared_mem);
-   //return 0;
-
-
-   void* shmem = create_shared_memory(128);
-   creating_child_process(shmem);
+   printf("i cant enter");
+   key_t key;
+   pipe(fd1);
+   key = ftok("progfile", 65);
+   printf("i cant enter");
+   creating_child_process(key);
    return 0;
 
 }
+
+//ftok(): is use to generate a unique key.
+//msgget(): either returns the message queue identifier for a newly created message queue or returns the identifiers for a queue which exists with the same key value.
+//msgsnd(): Data is placed on to a message queue by calling msgsnd().
+//msgrcv(): messages are retrieved from a queue.
+//msgctl(): It performs various operations on a queue. Generally it is use to destroy message queue.
