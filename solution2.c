@@ -20,6 +20,7 @@ const int ruby = 50;
 const int sapphire = 1200;
 const int emerald = 800;
 
+int hk = 0;
 int fd1[2];
 int fd2[2];
 int fd3[2];
@@ -77,7 +78,11 @@ int creating_child_process(void *shared_mem){
    int pid=fork();
 
    if(pid>0){
-      printf("Child read: %s\n", shared_mem);
+      while(1){
+         printf("Child read: %s\n", shared_mem);
+         sleep(1);
+      }
+      
       int pid2=fork();
 
       if(pid2>0){
