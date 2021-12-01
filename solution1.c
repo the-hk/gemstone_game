@@ -58,6 +58,7 @@ int go_and_read(int number_of_child){
          result += emerald;
       }
    }
+   fclose(fp1);
    return result;
 
 }
