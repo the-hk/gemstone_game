@@ -9,7 +9,6 @@
 #include <sys/types.h>
 #include <errno.h>
 
-#define MAX 1024
   
 /*******STRUCTURES*************/
 typedef struct mesg_buffer {
